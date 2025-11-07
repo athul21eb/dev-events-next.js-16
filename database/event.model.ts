@@ -1,4 +1,4 @@
-import { Schema, model, models, Document } from "mongoose";
+import { Schema, model, models, Document, HydratedDocument } from "mongoose";
 
 export interface IEvent extends Document {
   title: string;
@@ -105,7 +105,7 @@ const EventSchema = new Schema<IEvent>(
 );
 
 // Pre-save hook: Generate slug from title and normalize date/time
-EventSchema.pre("save", function (next) {
+EventSchema.pre("save", function (this: HydratedDocument<IEvent>, next) {
   // Generate slug only if title is modified or new document
   if (this.isModified("title")) {
     this.slug = this.title

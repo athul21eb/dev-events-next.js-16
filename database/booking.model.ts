@@ -1,4 +1,4 @@
-import { Schema, model, models, Document, Types } from "mongoose";
+import { Schema, model, models, Document, Types, HydratedDocument } from "mongoose";
 import Event from "./event.model";
 
 export interface IBooking extends Document {
@@ -32,7 +32,7 @@ const BookingSchema = new Schema<IBooking>(
 );
 
 // Pre-save hook: Verify that the referenced event exists
-BookingSchema.pre("save", async function (next) {
+BookingSchema.pre("save", async function (this: HydratedDocument<IBooking>, next) {
   if (this.isModified("eventId")) {
     try {
       const eventExists = await Event.findById(this.eventId);
