@@ -22,14 +22,19 @@ interface MongooseCache {
 
 // Extend the global namespace to include our mongoose cache
 declare global {
-  var mongoose: MongooseCache | undefined;
+  var mongooseCache: MongooseCache | undefined;
 }
 
-// Initialize the cached connection object
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+const globalWithMongooseCache = global as typeof global & {
+  mongooseCache?: MongooseCache;
+};
 
-if (!global.mongoose) {
-  global.mongoose = cached;
+// Initialize the cached connection object
+const cached: MongooseCache =
+  globalWithMongooseCache.mongooseCache || { conn: null, promise: null };
+
+if (!globalWithMongooseCache.mongooseCache) {
+  globalWithMongooseCache.mongooseCache = cached;
 }
 
 /**
