@@ -108,27 +108,41 @@ const EventSchema = new Schema<IEvent>(
 EventSchema.pre("save", function (this: HydratedDocument<IEvent>, next) {
   // Generate slug only if title is modified or new document
   if (this.isModified("title")) {
-    this.slug = this.title
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "") // Remove special characters
-      .replace(/\s+/g, "-") // Replace spaces with hyphens
-      .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-      .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+    const baseSlug = this.title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  
+  // Only modify slug for new documents or when explicitly changing title
+  if (this.isNew) {
+    this.slug = `${baseSlug}-${Date.now()}`;
+  } else {
+    this.slug = baseSlug;
+  }
   }
 
   // Normalize date to ISO format (YYYY-MM-DD)
   if (this.isModified("date")) {
-    const dateObj = new Date(this.date);
+    // Parse date without time to avoid timezone shifts
+    const dateMatch = this.date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!dateMatch) {
+      return next(new Error("Invalid date format. Use YYYY-MM-DD"));
+    }
+    const [, year, month, day] = dateMatch;
+    const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
     if (isNaN(dateObj.getTime())) {
       return next(new Error("Invalid date format"));
     }
-    this.date = dateObj.toISOString().split("T")[0];
+    // Format without timezone conversion
+    this.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
   // Normalize time to HH:MM format
-  if (this.isModified("time")) {
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+   if (this.isModified("time")) {
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(this.time)) {
       return next(new Error("Invalid time format. Use HH:MM format"));
     }

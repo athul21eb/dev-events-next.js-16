@@ -40,8 +40,8 @@ BookingSchema.pre("save", async function (this: HydratedDocument<IBooking>, next
         return next(new Error("Referenced event does not exist"));
       }
     } catch (error) {
-      return next(new Error("Failed to validate event reference"));
-    }
++      return next(error instanceof Error ? error : new Error("Failed to validate event reference"));
+     }
   }
 
   next();
