@@ -28,7 +28,7 @@ const EventSchema = new Schema<IEvent>(
     },
     slug: {
       type: String,
-      unique: true,
+    
       lowercase: true,
       trim: true,
     },
@@ -115,7 +115,7 @@ EventSchema.pre("save", function (this: HydratedDocument<IEvent>, next) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
-  
+
   // Only modify slug for new documents or when explicitly changing title
   if (this.isNew) {
     this.slug = `${baseSlug}-${Date.now()}`;
