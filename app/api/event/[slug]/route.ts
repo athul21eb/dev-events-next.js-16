@@ -36,6 +36,8 @@ export async function GET(
     // Sanitize slug (remove any potential malicious input)
     const sanitizedSlug = slug.trim().toLowerCase();
 
+    // Simulate a 5-second network delay for testing loading states
+    
     // Query events by slug
     const event = await Event.findOne({ slug: sanitizedSlug }).lean();
 
