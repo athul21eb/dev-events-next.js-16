@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    typescript: {
-        ignoreBuildErrors: true,
-    },
+
     cacheComponents: true,
     images: {
         remotePatterns: [
@@ -12,7 +10,7 @@ const nextConfig: NextConfig = {
                 hostname: 'res.cloudinary.com',
             }
         ],
-        unoptimized:true,
+        unoptimized: true, // Removed to enable Next.js image optimization
     },
   async rewrites() {
     return [
