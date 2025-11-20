@@ -9,6 +9,9 @@ const BookEvent = ({ eventId, slug }: { eventId: string, slug: string;}) => {
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [runConfetti, setRunConfetti] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [emailError, setEmailError] = useState<string | null>(null);
 
     const confettiContainerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -16,27 +19,41 @@ const BookEvent = ({ eventId, slug }: { eventId: string, slug: string;}) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Basic email validation
-        if (!email || !email.includes('@')) {
-            // You could add a state here to show an error message
-            alert('Please enter a valid email address.');
+        // clear previous errors
+        setError(null);
+        setEmailError(null);
+
+        // Trim and validate email using a simple regex
+        const trimmed = email.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!trimmed || !emailRegex.test(trimmed)) {
+            setEmailError("Please enter a valid email address.");
             return;
         }
 
-        // Disable button to prevent multiple submissions (optional but good practice)
-        // e.currentTarget.querySelector('button').disabled = true;
+        setLoading(true);
 
-        const { success } = await createBooking({ eventId, slug, email });
+        try {
 
-        if(success) {
-            setSubmitted(true);
-            setRunConfetti(true);
-            posthog.capture('event_booked', { eventId, slug, email })
-        } else {
-            console.error('Booking creation failed')
-            posthog.captureException('Booking creation failed')
+            const result = await createBooking({ eventId, email: trimmed });
+
+            if (result.success) {
+                setSubmitted(true);
+                setRunConfetti(true);
+                posthog.capture("event_booked", { eventId, slug, email });
+            } else {
+                const err = new Error(result.error || "Booking creation failed");
+                setError(err.message);
+                posthog.captureException(err);
+            }
+        } catch (err) {
+            const errObj = err instanceof Error ? err : new Error(String(err));
+            setError(errObj.message);
+            posthog.captureException(errObj);
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
     // This effect will run the confetti for 5 seconds and then stop.
     useEffect(() => {
@@ -82,13 +99,24 @@ const BookEvent = ({ eventId, slug }: { eventId: string, slug: string;}) => {
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
                             id="email"
                             placeholder="Enter your email address"
+                            disabled={loading || submitted}
+                            aria-invalid={!!emailError}
+                            className={emailError ? 'border-red-500' : ''}
                         />
+                        {emailError && (
+                            <p className="mt-2 text-sm text-red-500" role="alert">{emailError}</p>
+                        )}
+                        {error && (
+                            <p className="mt-2 text-sm text-red-500" role="alert">{error}</p>
+                        )}
                     </div>
 
-                    <button type="submit" className="button-submit">Submit</button>
+                    <button type="submit" className="button-submit" disabled={loading || submitted}>
+                        {loading ? 'Booking...' : 'Submit'}
+                    </button>
                 </form>
             )}
         </div>

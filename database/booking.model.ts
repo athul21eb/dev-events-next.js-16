@@ -47,8 +47,8 @@ BookingSchema.pre("save", async function (this: HydratedDocument<IBooking>, next
   next();
 });
 
-// Create index on eventId for faster queries
-BookingSchema.index({ eventId: 1 });
+// Create unique compound index to prevent duplicate bookings (eventId + email)
+BookingSchema.index({ eventId: 1, email: 1 }, { unique: true });
 
 const Booking = models.Booking || model<IBooking>("Booking", BookingSchema);
 
